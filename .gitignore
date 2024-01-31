@@ -1,3 +1,7 @@
 venv
 .env
 .idea
+.flaskenv
+config.py
+migrations
+instance
