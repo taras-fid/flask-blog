@@ -17,8 +17,20 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def set_role(self, role_id):
-        # todo: add `role_id` validation
-        self.role_id = role_id
+        if Role.query.filter_by(id=role_id).first():
+            self.role_id = role_id
+        raise Exception('No such role')
+
+    def to_json(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'role_id': self.role_id
+        }
+
+    def __str__(self):
+        return str(self.id) + ': ' + self.email
 
 
 class Role(db.Model):
