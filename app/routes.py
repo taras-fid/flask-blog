@@ -1,6 +1,7 @@
-from flask import request, session, make_response, abort, redirect
-from app import app, db
+from flask import request, session, make_response, abort, render_template
+from app import app, db, mail
 from app.models import User
+from flask_mail import Message
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -20,6 +21,14 @@ def register():
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
+
+        msg = Message(
+            subject='Registration letter',
+            sender='noreply@employer.com',
+            recipients=[email]
+        )
+        msg.html = render_template('template_letter.html', content=render_template('register_letter.html'))
+        mail.send(msg)
 
         return make_response(user.to_json())
 
@@ -79,7 +88,7 @@ def add_role_for_user(user_id):
 
 
 @app.route('/add-permission/<role_id>', methods=['POST'])
-def add_role_for_user(role_id):
+def add_permission_for_role(role_id):
     try:
         if request.method == 'POST':
             if session.get('user_id'):
