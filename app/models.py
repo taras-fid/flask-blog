@@ -86,3 +86,10 @@ class Salary(db.Model):
             'id': self.id,
             'salary': self.salary
         }
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128))
+    description = db.Column(db.String(128))
+    price = db.Column(db.Float)
+    img = db.Column(db.String(256))
