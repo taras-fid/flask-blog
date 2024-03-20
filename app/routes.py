@@ -1,7 +1,10 @@
-from flask import request, session, make_response, abort, render_template
+import os
+
+from flask import request, session, make_response, abort, render_template, flash, redirect
 from app import app, db, mail
-from app.models import User
+from app.models import User, Product
 from flask_mail import Message
+from werkzeug.utils import secure_filename
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -47,6 +50,9 @@ def login():
 
         if user and user.is_password_correct(password):
             session['user_id'] = user.id
+
+            # TODO: Add validation that user turned on/has 2FA.
+
             return make_response(user.to_json())
 
         return 'error: no user found', 422
@@ -118,3 +124,60 @@ def add_permission_for_role(role_id):
             return str(ex), 404
         else:
             return str(ex), 500
+
+@app.route('/cart/add/<product_id>', methods=['POST'])
+def add_product_to_cart(product_id):
+    product = Product.query.filter_by(id=int(product_id)).first()
+
+    if not product:
+        abort(404)
+
+    if 'cart' not in session:
+        session['cart'] = {'products': []}
+
+    for cart_product in session['cart']['products']:
+        if cart_product['id'] == product.id:
+            cart_product['quantity'] += 1
+            cart_product['price'] += product.price
+            break
+    else:
+        session['cart']['products'].append(
+            {
+                'id': product.id,
+                'name': product.name,
+                'quantity': 1,
+                'price': product.price
+            }
+        )
+
+    session.modified = True
+
+    return session['cart']['products']
+
+
+@app.route('/cart/remove/<product_id>', methods=['POST'])
+def remove_product_to_cart(product_id):
+    product = Product.query.filter_by(id=int(product_id)).first()
+
+    if not product:
+        abort(404)
+
+    if 'cart' in session and 'products' in session['cart']:
+        try:
+            for cart_product in session['cart']['products']:
+                if cart_product['id'] == product.id:
+                    session['cart']['products'].remove(cart_product)
+        except ValueError:
+            pass
+
+    session.modified = True
+
+    return session['cart']['products']
+
+
+@app.route('/cart/all')
+def cart_products_all():
+    if 'cart' in session and 'products' in session['cart']:
+        return session['cart']['products']
+    else:
+        return []
